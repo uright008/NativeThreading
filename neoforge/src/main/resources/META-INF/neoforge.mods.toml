@@ -1,0 +1,31 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "native_threading"
+version = "${version}"
+displayName = "Native Threading"
+description = "Native threading optimizations for Minecraft servers"
+authors = ["uright008"]
+
+[[mixins]]
+config = "parallel-core.mixins.json"
+
+[[mixins]]
+config = "explosion.mixins.json"
+
+[[mixins]]
+config = "hopper.mixins.json"
+
+[[mixins]]
+config = "redstone.mixins.json"
+
+[[mixins]]
+config = "redstone-diode.mixins.json"
+
+[[mixins]]
+config = "vectorial.mixins.json"
+
+[[mixins]]
+config = "entity.mixins.json"

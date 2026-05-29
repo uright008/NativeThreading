@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Premain-Class: space.vectrix.ignite.agent.IgniteAgent
+Agent-Class: space.vectrix.ignite.agent.IgniteAgent
+Launcher-Agent-Class: space.vectrix.ignite.agent.IgniteAgent
+Main-Class: space.vectrix.ignite.IgniteBootstrap
+Multi-Release: true
+Specification-Title: ignite
+Specification-Version: 1.2
+Specification-Vendor: vectrix.space
+Implementation-Title: ignite-launcher
+Implementation-Version: 1.2.1
+Implementation-Vendor: vectrix.space
+
+Name: org/objectweb/asm/
+Implementation-Version: 9.9.1
+

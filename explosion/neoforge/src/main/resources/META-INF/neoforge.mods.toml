@@ -1,0 +1,13 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "explosion"
+version = "${version}"
+displayName = "Explosion Parallelization"
+description = "Parallelizes Minecraft explosion calculations for improved server TPS."
+authors = ["uright008"]
+
+[[mixins]]
+config = "explosion.mixins.json"

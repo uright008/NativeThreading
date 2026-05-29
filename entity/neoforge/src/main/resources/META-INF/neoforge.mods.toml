@@ -1,0 +1,13 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "entity"
+version = "${version}"
+displayName = "Entity Parallelization"
+description = "Parallel entity tick processing for higher entity counts at stable TPS."
+authors = ["uright008"]
+
+[[mixins]]
+config = "entity.mixins.json"

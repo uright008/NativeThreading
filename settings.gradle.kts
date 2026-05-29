@@ -1,0 +1,29 @@
+pluginManagement {
+    repositories {
+        maven { name = "Fabric"; url = uri("https://maven.fabricmc.net/") }
+        maven { name = "NeoForge"; url = uri("https://maven.neoforged.net/releases") }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id("net.fabricmc.fabric-loom") version providers.gradleProperty("loom_version")
+    }
+}
+
+rootProject.name = "NativeThreading"
+
+include(":fabric")
+include(":neoforge")
+include(":core")
+include(":explosion")
+include(":hopper")
+include(":redstone")
+include(":vectorial")
+include(":entity")
+
+project(":core").buildFileName = "build.included.gradle.kts"
+project(":explosion").buildFileName = "build.included.gradle.kts"
+project(":hopper").buildFileName = "build.included.gradle.kts"
+project(":redstone").buildFileName = "build.included.gradle.kts"
+project(":vectorial").buildFileName = "build.included.gradle.kts"
+project(":entity").buildFileName = "build.included.gradle.kts"

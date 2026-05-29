@@ -1,0 +1,60 @@
+import org.gradle.api.file.DuplicatesStrategy
+
+plugins {
+    id("java-library")
+    id("net.neoforged.moddev") version "2.0.141"
+}
+
+version = providers.gradleProperty("mod_version").get()
+group = providers.gradleProperty("maven_group").get()
+base { archivesName = "explosion-neoforge" }
+
+neoForge {
+    version = providers.gradleProperty("neoforge_version").get()
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(26)
+
+repositories {
+    mavenCentral()
+    maven { name = "NeoForge"; url = uri("https://maven.neoforged.net/releases") }
+    maven { name = "Fabric"; url = uri("https://maven.fabricmc.net/") }
+}
+
+dependencies {
+    implementation("net.neoforged:neoforge:${providers.gradleProperty("neoforge_version").get()}")
+    implementation("org.javassist:javassist:3.30.2-GA")
+    implementation("net.bytebuddy:byte-buddy-agent:1.15.11")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("../common/src/main/java")
+            srcDir("../../core/common/src/main/java")
+            srcDir("../../vectorial/common/src/main/java")
+            srcDir("../../vectorial/common/src/generated/java")
+            exclude("**/ParallelCommandFabric.java")
+        }
+    }
+}
+
+tasks.processResources {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    val version = version
+    inputs.property("version", version)
+    filesMatching("META-INF/neoforge.mods.toml") { expand("version" to version) }
+    from("../fabric/src/main/resources") {
+        exclude("fabric.mod.json")
+        into("")
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach { options.release = 26 }
+java { withSourcesJar(); sourceCompatibility = JavaVersion.VERSION_26; targetCompatibility = JavaVersion.VERSION_26 }
+tasks.named<Jar>("sourcesJar") { duplicatesStrategy = DuplicatesStrategy.EXCLUDE }
+tasks.jar {
+    val projectName = project.name
+    inputs.property("projectName", projectName)
+    from("LICENSE") { rename { "${it}_$projectName" } }
+}
