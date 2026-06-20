@@ -5,15 +5,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
 
-/**
- * Fast block-state reader that bypasses {@code LevelChunkSection.getBlockState()}
- * and {@code PalettedContainer.get(x,y,z)} + {@code Strategy.getIndex()}.
- *
- * <p>Hot path: ONE virtual call to {@code PalettedContainer.get(int)} instead
- * of the original three-method chain.</p>
- *
- * <p>Thread-safe: each caller creates its own instance.</p>
- */
 public final class SectionBlockReader {
 
     private final PalettedContainerGetInvoker invoker;
