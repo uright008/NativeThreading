@@ -25,7 +25,7 @@
     "enabled": true,
     "wireEnabled": true,
     "diodeEnabled": true,
-    "wireThreshold": 4,
+    "wireThreshold": 64,
     "maxWorkers": 22
   },
   "ai-parallelization": {
@@ -76,7 +76,7 @@
     "enabled": true,
     "wireEnabled": true,
     "diodeEnabled": true,
-    "wireThreshold": 4,
+    "wireThreshold": 64,
     "maxWorkers": 22
   }
 }
