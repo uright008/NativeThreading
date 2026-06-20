@@ -3,7 +3,9 @@ package com.github.uright008.pc;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.PalettedContainer;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 
 public final class SectionBlockReader {
 
@@ -13,12 +15,14 @@ public final class SectionBlockReader {
         this.container = container;
     }
 
-    private static final Method GET;
+    private static final MethodHandle GET;
 
     static {
         try {
-            GET = PalettedContainer.class.getDeclaredMethod("get", int.class);
-            GET.setAccessible(true);
+            var lookup = MethodHandles.privateLookupIn(
+                    PalettedContainer.class, MethodHandles.lookup());
+            GET = lookup.findVirtual(PalettedContainer.class, "get",
+                    MethodType.methodType(Object.class, int.class));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -33,8 +37,8 @@ public final class SectionBlockReader {
     public BlockState get(int x, int y, int z) {
         int idx = (y & 15) << 8 | (z & 15) << 4 | (x & 15);
         try {
-            return (BlockState) GET.invoke(container, idx);
-        } catch (Exception e) {
+            return (BlockState) GET.invokeExact(container, idx);
+        } catch (Throwable e) {
             throw new RuntimeException(e);
         }
     }
