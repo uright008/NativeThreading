@@ -10,7 +10,8 @@
     "ServerLevelSafeIterationMixin",
     "TickBlockEntitiesNullGuardMixin",
     "ClassInstanceMultiMapMixin",
-    "IgniteParallelCoreInit"
+    "IgniteParallelCoreInit",
+    "PalettedContainerGetInvoker"
   ],
   "injectors": {
     "defaultRequire": 1

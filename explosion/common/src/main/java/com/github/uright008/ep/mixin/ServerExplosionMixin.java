@@ -3,6 +3,7 @@ package com.github.uright008.ep.mixin;
 import com.github.uright008.ep.ExplosionHelper;
 import com.github.uright008.ep.ExplosionParallelConfig;
 import com.github.uright008.pc.ChunkGrid;
+import com.github.uright008.pc.SectionBlockReader;
 import com.github.uright008.pc.ParallelThreadPool;
 import com.github.uright008.pc.ParallelWorker;
 import com.github.uright008.pc.simd.SimdBatchOps;
@@ -207,6 +208,7 @@ public abstract class ServerExplosionMixin {
             final double sx = ray.xd() * 0.3, sy = ray.yd() * 0.3, sz = ray.zd() * 0.3;
             ChunkAccess chunk = null;
             LevelChunkSection section = null;
+            SectionBlockReader reader = null;
             int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
             int lastSecIdx = Integer.MIN_VALUE;
 
@@ -223,6 +225,7 @@ public abstract class ServerExplosionMixin {
                     chunk = chunkGrid.getChunk(cx, cz);
                     lastCx = cx; lastCz = cz;
                     section = null;
+                    reader = null;
                     lastSecIdx = Integer.MIN_VALUE;
                 }
 
@@ -233,9 +236,13 @@ public abstract class ServerExplosionMixin {
                         if (secIdx != lastSecIdx) {
                             section = chunk.getSection(secIdx);
                             lastSecIdx = secIdx;
+                            reader = null;
+                            if (section != null) {
+                                reader = SectionBlockReader.of(section);
+                            }
                         }
-                        if (section != null) {
-                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
+                        if (reader != null) {
+                            block = reader.get(bx, by, bz);
                         }
                     }
                 }
@@ -272,6 +279,7 @@ public abstract class ServerExplosionMixin {
             final int[] deltas = ExplosionHelper.RAY_DELTAS[rayIndex];
             ChunkAccess chunk = null;
             LevelChunkSection section = null;
+            SectionBlockReader reader = null;
             int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
             int lastSecIdx = Integer.MIN_VALUE;
 
@@ -285,6 +293,7 @@ public abstract class ServerExplosionMixin {
                     chunk = chunkGrid.getChunk(cx, cz);
                     lastCx = cx; lastCz = cz;
                     section = null;
+                    reader = null;
                     lastSecIdx = Integer.MIN_VALUE;
                 }
 
@@ -295,9 +304,13 @@ public abstract class ServerExplosionMixin {
                         if (secIdx != lastSecIdx) {
                             section = chunk.getSection(secIdx);
                             lastSecIdx = secIdx;
+                            reader = null;
+                            if (section != null) {
+                                reader = SectionBlockReader.of(section);
+                            }
                         }
-                        if (section != null) {
-                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
+                        if (reader != null) {
+                            block = reader.get(bx, by, bz);
                         }
                     }
                 }
@@ -626,6 +639,7 @@ public abstract class ServerExplosionMixin {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         ChunkAccess chunk = null;
         LevelChunkSection section = null;
+        SectionBlockReader reader = null;
         int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE, lastSecY = Integer.MIN_VALUE;
 
         while (true) {
@@ -640,16 +654,21 @@ public abstract class ServerExplosionMixin {
                 lastCx = cx; lastCz = cz;
                 lastSecY = Integer.MIN_VALUE;
                 section = null;
+                reader = null;
             }
             int secIdx = chunk != null ? chunk.getSectionIndex(y) : -1;
             if (secIdx != lastSecY && chunk != null && secIdx >= 0) {
                 section = chunk.getSection(secIdx);
                 lastSecY = secIdx;
+                reader = null;
+                if (section != null) {
+                    reader = SectionBlockReader.of(section);
+                }
             }
 
-            if (section != null) {
+            if (reader != null) {
                 int lx = x & 15, ly = y & 15, lz = z & 15;
-                BlockState state = section.getBlockState(lx, ly, lz);
+                BlockState state = reader.get(lx, ly, lz);
                 if (!state.isAir()) {
                     pos.set(x, y, z);
                     int id = Block.getId(state);
