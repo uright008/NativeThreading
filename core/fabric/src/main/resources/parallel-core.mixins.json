@@ -9,8 +9,7 @@
     "ServerChunkCacheMixin",
     "ServerLevelSafeIterationMixin",
     "TickBlockEntitiesNullGuardMixin",
-    "ClassInstanceMultiMapMixin",
-    "PalettedContainerGetInvoker"
+    "ClassInstanceMultiMapMixin"
   ],
   "injectors": {
     "defaultRequire": 1
