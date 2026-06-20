@@ -23,12 +23,9 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.ExplosionDamageCalculator;
 import net.minecraft.world.level.ServerExplosion;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import org.slf4j.LoggerFactory;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -205,10 +202,6 @@ public abstract class ServerExplosionMixin {
         if (ExplosionParallelConfig.isPreciseRays()) {
             double xp = this.center.x, yp = this.center.y, zp = this.center.z;
             final double sx = ray.xd() * 0.3, sy = ray.yd() * 0.3, sz = ray.zd() * 0.3;
-            ChunkAccess chunk = null;
-            LevelChunkSection section = null;
-            int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
-            int lastSecIdx = Integer.MIN_VALUE;
 
             for (int s = 0; s < MAX && remainingPower > 0.0F; remainingPower -= 0.22500001F, s++) {
                 int bx = net.minecraft.util.Mth.floor(xp);
@@ -219,26 +212,7 @@ public abstract class ServerExplosionMixin {
 
                 int cx = SectionPos.blockToSectionCoord(bx);
                 int cz = SectionPos.blockToSectionCoord(bz);
-                if (cx != lastCx || cz != lastCz) {
-                    chunk = chunkGrid.getChunk(cx, cz);
-                    lastCx = cx; lastCz = cz;
-                    section = null;
-                    lastSecIdx = Integer.MIN_VALUE;
-                }
-
-                BlockState block = Blocks.AIR.defaultBlockState();
-                if (chunk != null) {
-                    int secIdx = chunk.getSectionIndex(by);
-                    if (secIdx >= 0) {
-                        if (secIdx != lastSecIdx) {
-                            section = chunk.getSection(secIdx);
-                            lastSecIdx = secIdx;
-                        }
-                        if (section != null) {
-                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
-                        }
-                    }
-                }
+                BlockState block = chunkGrid.getBlockState(cx, cz, by, bx & 15, by & 15, bz & 15);
                 if (isDefaultCalc) {
                     if (!block.isAir() || !block.getFluidState().isEmpty()) {
                         float res = (Math.max(block.getBlock().getExplosionResistance(),
@@ -270,10 +244,6 @@ public abstract class ServerExplosionMixin {
             int by = net.minecraft.util.Mth.floor(this.center.y);
             int bz = net.minecraft.util.Mth.floor(this.center.z);
             final int[] deltas = ExplosionHelper.RAY_DELTAS[rayIndex];
-            ChunkAccess chunk = null;
-            LevelChunkSection section = null;
-            int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
-            int lastSecIdx = Integer.MIN_VALUE;
 
             for (int s = 0; s < MAX && remainingPower > 0.0F; remainingPower -= 0.22500001F, s++) {
                 pos.set(bx, by, bz);
@@ -281,26 +251,7 @@ public abstract class ServerExplosionMixin {
 
                 int cx = SectionPos.blockToSectionCoord(bx);
                 int cz = SectionPos.blockToSectionCoord(bz);
-                if (cx != lastCx || cz != lastCz) {
-                    chunk = chunkGrid.getChunk(cx, cz);
-                    lastCx = cx; lastCz = cz;
-                    section = null;
-                    lastSecIdx = Integer.MIN_VALUE;
-                }
-
-                BlockState block = Blocks.AIR.defaultBlockState();
-                if (chunk != null) {
-                    int secIdx = chunk.getSectionIndex(by);
-                    if (secIdx >= 0) {
-                        if (secIdx != lastSecIdx) {
-                            section = chunk.getSection(secIdx);
-                            lastSecIdx = secIdx;
-                        }
-                        if (section != null) {
-                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
-                        }
-                    }
-                }
+                BlockState block = chunkGrid.getBlockState(cx, cz, by, bx & 15, by & 15, bz & 15);
                 if (isDefaultCalc) {
                     if (!block.isAir() || !block.getFluidState().isEmpty()) {
                         float res = (Math.max(block.getBlock().getExplosionResistance(),
@@ -624,9 +575,6 @@ public abstract class ServerExplosionMixin {
         double tMaxZ = tDeltaZ * (stepZ > 0 ? 1.0 - net.minecraft.util.Mth.frac(fromZ) : net.minecraft.util.Mth.frac(fromZ));
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
-        ChunkAccess chunk = null;
-        LevelChunkSection section = null;
-        int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE, lastSecY = Integer.MIN_VALUE;
 
         while (true) {
             if (stepX > 0 ? x > endX : (stepX < 0 ? x < endX : false)) break;
@@ -635,30 +583,15 @@ public abstract class ServerExplosionMixin {
 
             int cx = SectionPos.blockToSectionCoord(x);
             int cz = SectionPos.blockToSectionCoord(z);
-            if (cx != lastCx || cz != lastCz) {
-                chunk = chunkGrid.getChunk(cx, cz);
-                lastCx = cx; lastCz = cz;
-                lastSecY = Integer.MIN_VALUE;
-                section = null;
-            }
-            int secIdx = chunk != null ? chunk.getSectionIndex(y) : -1;
-            if (secIdx != lastSecY && chunk != null && secIdx >= 0) {
-                section = chunk.getSection(secIdx);
-                lastSecY = secIdx;
-            }
-
-            if (section != null) {
-                int lx = x & 15, ly = y & 15, lz = z & 15;
-                BlockState state = section.getBlockState(lx, ly, lz);
-                if (!state.isAir()) {
-                    pos.set(x, y, z);
-                    int id = Block.getId(state);
-                    if (id < ExplosionHelper.FULL_CUBE.length && ExplosionHelper.FULL_CUBE[id]) return true;
-                    VoxelShape shape = state.getCollisionShape(chunk, pos);
-                    if (!shape.isEmpty()) {
-                        BlockHitResult hit = shape.clip(fromVec, toVec, pos);
-                        if (hit != null && hit.getType() != HitResult.Type.MISS) return true;
-                    }
+            BlockState state = chunkGrid.getBlockState(cx, cz, y, x & 15, y & 15, z & 15);
+            if (!state.isAir()) {
+                pos.set(x, y, z);
+                int id = Block.getId(state);
+                if (id < ExplosionHelper.FULL_CUBE.length && ExplosionHelper.FULL_CUBE[id]) return true;
+                VoxelShape shape = state.getCollisionShape(chunkGrid.getChunk(cx, cz), pos);
+                if (!shape.isEmpty()) {
+                    BlockHitResult hit = shape.clip(fromVec, toVec, pos);
+                    if (hit != null && hit.getType() != HitResult.Type.MISS) return true;
                 }
             }
 
