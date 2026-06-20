@@ -37,7 +37,8 @@ public final class SectionBlockReader {
     public BlockState get(int x, int y, int z) {
         int idx = (y & 15) << 8 | (z & 15) << 4 | (x & 15);
         try {
-            return (BlockState) GET.invokeExact(container, idx);
+            Object result = GET.invokeExact(container, idx);
+            return (BlockState) result;
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
