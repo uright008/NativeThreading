@@ -3,7 +3,6 @@ package com.github.uright008.ep.mixin;
 import com.github.uright008.ep.ExplosionHelper;
 import com.github.uright008.ep.ExplosionParallelConfig;
 import com.github.uright008.pc.ChunkGrid;
-import com.github.uright008.pc.FastBlockAccess;
 import com.github.uright008.pc.ParallelThreadPool;
 import com.github.uright008.pc.ParallelWorker;
 import com.github.uright008.pc.simd.SimdBatchOps;
@@ -11,7 +10,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.EntityTypeTags;
-import net.minecraft.util.BitStorage;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
@@ -31,7 +29,6 @@ import org.slf4j.Logger;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import org.slf4j.LoggerFactory;
 import net.minecraft.world.level.chunk.LevelChunkSection;
-import net.minecraft.world.level.chunk.Palette;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
@@ -210,8 +207,6 @@ public abstract class ServerExplosionMixin {
             final double sx = ray.xd() * 0.3, sy = ray.yd() * 0.3, sz = ray.zd() * 0.3;
             ChunkAccess chunk = null;
             LevelChunkSection section = null;
-            BitStorage fastStorage = null;
-            Palette<BlockState> fastPalette = null;
             int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
             int lastSecIdx = Integer.MIN_VALUE;
 
@@ -228,7 +223,6 @@ public abstract class ServerExplosionMixin {
                     chunk = chunkGrid.getChunk(cx, cz);
                     lastCx = cx; lastCz = cz;
                     section = null;
-                    fastStorage = null; fastPalette = null;
                     lastSecIdx = Integer.MIN_VALUE;
                 }
 
@@ -239,15 +233,9 @@ public abstract class ServerExplosionMixin {
                         if (secIdx != lastSecIdx) {
                             section = chunk.getSection(secIdx);
                             lastSecIdx = secIdx;
-                            fastStorage = null; fastPalette = null;
-                            if (section != null) {
-                                fastStorage = FastBlockAccess.storage(section);
-                                fastPalette = FastBlockAccess.palette(section);
-                            }
                         }
-                        if (fastStorage != null) {
-                            int idx = (by & 15) << 8 | (bz & 15) << 4 | (bx & 15);
-                            block = fastPalette.valueFor(fastStorage.get(idx));
+                        if (section != null) {
+                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
                         }
                     }
                 }
@@ -284,8 +272,6 @@ public abstract class ServerExplosionMixin {
             final int[] deltas = ExplosionHelper.RAY_DELTAS[rayIndex];
             ChunkAccess chunk = null;
             LevelChunkSection section = null;
-            BitStorage fastStorage = null;
-            Palette<BlockState> fastPalette = null;
             int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE;
             int lastSecIdx = Integer.MIN_VALUE;
 
@@ -299,7 +285,6 @@ public abstract class ServerExplosionMixin {
                     chunk = chunkGrid.getChunk(cx, cz);
                     lastCx = cx; lastCz = cz;
                     section = null;
-                    fastStorage = null; fastPalette = null;
                     lastSecIdx = Integer.MIN_VALUE;
                 }
 
@@ -310,15 +295,9 @@ public abstract class ServerExplosionMixin {
                         if (secIdx != lastSecIdx) {
                             section = chunk.getSection(secIdx);
                             lastSecIdx = secIdx;
-                            fastStorage = null; fastPalette = null;
-                            if (section != null) {
-                                fastStorage = FastBlockAccess.storage(section);
-                                fastPalette = FastBlockAccess.palette(section);
-                            }
                         }
-                        if (fastStorage != null) {
-                            int idx = (by & 15) << 8 | (bz & 15) << 4 | (bx & 15);
-                            block = fastPalette.valueFor(fastStorage.get(idx));
+                        if (section != null) {
+                            block = section.getBlockState(bx & 15, by & 15, bz & 15);
                         }
                     }
                 }
@@ -647,8 +626,6 @@ public abstract class ServerExplosionMixin {
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         ChunkAccess chunk = null;
         LevelChunkSection section = null;
-        BitStorage fastStorage = null;
-        Palette<BlockState> fastPalette = null;
         int lastCx = Integer.MIN_VALUE, lastCz = Integer.MIN_VALUE, lastSecY = Integer.MIN_VALUE;
 
         while (true) {
@@ -663,23 +640,16 @@ public abstract class ServerExplosionMixin {
                 lastCx = cx; lastCz = cz;
                 lastSecY = Integer.MIN_VALUE;
                 section = null;
-                fastStorage = null; fastPalette = null;
             }
             int secIdx = chunk != null ? chunk.getSectionIndex(y) : -1;
             if (secIdx != lastSecY && chunk != null && secIdx >= 0) {
                 section = chunk.getSection(secIdx);
                 lastSecY = secIdx;
-                fastStorage = null; fastPalette = null;
-                if (section != null) {
-                    fastStorage = FastBlockAccess.storage(section);
-                    fastPalette = FastBlockAccess.palette(section);
-                }
             }
 
-            if (fastStorage != null) {
+            if (section != null) {
                 int lx = x & 15, ly = y & 15, lz = z & 15;
-                int stateId = fastStorage.get(ly << 8 | lz << 4 | lx);
-                BlockState state = fastPalette.valueFor(stateId);
+                BlockState state = section.getBlockState(lx, ly, lz);
                 if (!state.isAir()) {
                     pos.set(x, y, z);
                     int id = Block.getId(state);
