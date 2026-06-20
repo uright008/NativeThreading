@@ -1,22 +1,10 @@
-.gradle/
 build/
-run/
-bin/
-*.class
-*.jar
-*.war
-!gradle/wrapper/gradle-wrapper.jar
+.gradle/
 .idea/
 *.iml
-.DS_Store
-/fabric.mod.json
-.omo
+bin/
+out/
+classes/
+*.log
+gradle/wrapper/gradle-wrapper.jar
 
-# Eclipse
-.classpath
-.project
-.settings/
-.eclipse/
-
-# Other
-leaves/

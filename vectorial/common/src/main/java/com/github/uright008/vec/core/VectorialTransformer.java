@@ -1,8 +1,12 @@
 package com.github.uright008.vec.core;
 
 import javassist.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class VectorialTransformer {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VectorialTransformer.class);
+
     private static final String E = "net.minecraft.world.entity.Entity";
     private static final String S = "com.github.uright008.vec.core.SoAStore";
     private static final String G = "com.github.uright008.vec.core.GeneratedFields";
@@ -24,10 +28,10 @@ public final class VectorialTransformer {
             byte[] out = ct.toBytecode();
             ct.detach();
             transformed = true;
-            System.out.println("[vectorial] " + GeneratedFields.ALL.length + " fields mapped to SoA");
+            LOGGER.info("{} fields mapped to SoA", GeneratedFields.ALL.length);
             return out;
         } catch (Exception e) {
-            System.err.println("[vectorial] transformation failed: " + e.getMessage());
+            LOGGER.warn("Transformation failed", e);
             return null;
         }
     }

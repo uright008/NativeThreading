@@ -3,20 +3,24 @@ package com.github.uright008.vec.core;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class VectorialAgent {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(VectorialAgent.class);
 
     private static volatile Instrumentation instrumentation;
 
     private VectorialAgent() {}
 
     public static void premain(String agentArgs, Instrumentation inst) {
-        System.out.println("[vectorial] agent loaded via -javaagent");
+        LOGGER.info("Vectorial agent loaded via -javaagent");
         init(inst);
     }
 
     public static void agentmain(String agentArgs, Instrumentation inst) {
-        System.out.println("[vectorial] agent attached dynamically");
+        LOGGER.info("Vectorial agent attached dynamically");
         init(inst);
     }
 

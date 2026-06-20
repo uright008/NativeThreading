@@ -26,7 +26,7 @@ public final class RedstoneParallelConfig extends ParallelConfig {
         enabled = true;
         wireEnabled = true;
         diodeEnabled = true;
-        wireThreshold = 4;
+        wireThreshold = 64;
         maxWorkers = Math.max(2, Runtime.getRuntime().availableProcessors() - 2);
     }
 

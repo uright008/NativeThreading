@@ -8,9 +8,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +24,6 @@ import java.util.concurrent.TimeUnit;
  */
 public final class RedstoneWireHelper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("mc-parallel:redstone");
     private static final Set<Level> GUARDS = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private static final Long2IntOpenHashMap PROCESSED = new Long2IntOpenHashMap();
     private static int processEpoch = 1;
@@ -72,8 +68,6 @@ public final class RedstoneWireHelper {
 
         int[] powers = propagatePowers(graph);
         applyChanges(level, graph, powers);
-
-        LOGGER.debug("Parallel redstone update: {} wires", count);
         return true;
     }
 
