@@ -1,34 +1,50 @@
 package com.github.uright008.pc;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Production {@link WriteQueue} backed by a {@link ConcurrentLinkedQueue}.
+ * Thread-local write queue — avoids CAS contention of a single concurrent queue.
  *
- * <p>Parallel workers add deferred writes without contention; the main
- * thread drains them via {@link #drainWrites()} after the parallel phase.</p>
+ * <p>Each worker thread buffers deferred writes in its own {@link ArrayList},
+ * then atomically hands the buffer to a shared drain queue.
+ * The main thread drains all buffers sequentially after the parallel phase.</p>
  */
 public final class ConcurrentWriteQueue implements WriteQueue {
 
     public static final ConcurrentWriteQueue INSTANCE = new ConcurrentWriteQueue();
 
-    private final ConcurrentLinkedQueue<Runnable> deferred = new ConcurrentLinkedQueue<>();
+    private final ThreadLocal<List<Runnable>> localQueue =
+            ThreadLocal.withInitial(ArrayList::new);
+    private final Queue<List<Runnable>> drainQueue = new ConcurrentLinkedQueue<>();
 
     private ConcurrentWriteQueue() {}
 
     @Override
     public void addDeferred(Runnable write) {
-        deferred.add(write);
+        localQueue.get().add(write);
     }
 
     @Override
     public void drainWrites() {
-        Runnable r;
-        while ((r = deferred.poll()) != null) r.run();
+        List<Runnable> current = localQueue.get();
+        if (!current.isEmpty()) {
+            drainQueue.add(current);
+            localQueue.remove();
+        }
+        List<Runnable> batch;
+        while ((batch = drainQueue.poll()) != null) {
+            for (Runnable r : batch) {
+                r.run();
+            }
+        }
     }
 
     /** Clear all pending writes. Intended for test teardown only. */
     public static void resetForTesting() {
-        INSTANCE.deferred.clear();
+        INSTANCE.localQueue.remove();
+        INSTANCE.drainQueue.clear();
     }
 }
