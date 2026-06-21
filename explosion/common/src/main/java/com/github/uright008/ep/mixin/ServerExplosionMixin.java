@@ -149,12 +149,25 @@ public abstract class ServerExplosionMixin {
         }
 
         List<BitSet> workerGrids;
+        final BlockState[] flatBlocks = new BlockState[gridSize];
+        for (int z = minZ; z <= maxZ; z++) {
+            int zOff = (z - minZ) * strideZ;
+            for (int y = minY; y <= maxY; y++) {
+                int yzOff = zOff + (y - minY) * strideY;
+                for (int x = minX; x <= maxX; x++) {
+                    int cx = SectionPos.blockToSectionCoord(x);
+                    int cz = SectionPos.blockToSectionCoord(z);
+                    flatBlocks[yzOff + (x - minX)] = chunkGrid.getBlockState(cx, cz, y, x & 15, y & 15, z & 15);
+                }
+            }
+        }
+
         try {
             workerGrids = ParallelWorker.mapEach(ParallelThreadPool.getPool("Explosion"),
                     ranges, range -> {
                         for (int i = range.start; i < range.end; i++)
                             traceRay(rays.get(i), i, range.grid, minX, minY, minZ, maxX, maxY, maxZ,
-                                    chunkGrid, strideY, strideZ, firstBlockDistances, rayPowers[i]);
+                                    chunkGrid, strideY, strideZ, firstBlockDistances, rayPowers[i], flatBlocks);
                         return range.grid;
                     }, 5);
         } catch (RuntimeException e) {
@@ -189,7 +202,7 @@ public abstract class ServerExplosionMixin {
                           BitSet grid, int minX, int minY, int minZ,
                           int maxX, int maxY, int maxZ, ChunkGrid chunkGrid,
                           int strideY, int strideZ, float[] firstBlockDistances,
-                          float initialPower) {
+                          float initialPower, BlockState[] flatBlocks) {
         float remainingPower = initialPower;
         final ServerExplosion self = (ServerExplosion) (Object) this;
         final boolean isDefaultCalc = this.damageCalculator.getClass() == ExplosionDamageCalculator.class;
@@ -208,11 +221,9 @@ public abstract class ServerExplosionMixin {
                 int by = net.minecraft.util.Mth.floor(yp);
                 int bz = net.minecraft.util.Mth.floor(zp);
                 pos.set(bx, by, bz);
-                if (!this.level.isInWorldBounds(pos)) break;
+                if (bx < gMinX || bx > gMaxX || by < gMinY || by > gMaxY || bz < gMinZ || bz > gMaxZ) break;
 
-                int cx = SectionPos.blockToSectionCoord(bx);
-                int cz = SectionPos.blockToSectionCoord(bz);
-                BlockState block = chunkGrid.getBlockState(cx, cz, by, bx & 15, by & 15, bz & 15);
+                BlockState block = flatBlocks[(bx - gMinX) + (by - gMinY) * strideY_ + (bz - gMinZ) * strideZ_];
                 if (isDefaultCalc) {
                     if (!block.isAir() || !block.getFluidState().isEmpty()) {
                         float res = (Math.max(block.getBlock().getExplosionResistance(),
@@ -247,11 +258,9 @@ public abstract class ServerExplosionMixin {
 
             for (int s = 0; s < MAX && remainingPower > 0.0F; remainingPower -= 0.22500001F, s++) {
                 pos.set(bx, by, bz);
-                if (!this.level.isInWorldBounds(pos)) break;
+                if (bx < gMinX || bx > gMaxX || by < gMinY || by > gMaxY || bz < gMinZ || bz > gMaxZ) break;
 
-                int cx = SectionPos.blockToSectionCoord(bx);
-                int cz = SectionPos.blockToSectionCoord(bz);
-                BlockState block = chunkGrid.getBlockState(cx, cz, by, bx & 15, by & 15, bz & 15);
+                BlockState block = flatBlocks[(bx - gMinX) + (by - gMinY) * strideY_ + (bz - gMinZ) * strideZ_];
                 if (isDefaultCalc) {
                     if (!block.isAir() || !block.getFluidState().isEmpty()) {
                         float res = (Math.max(block.getBlock().getExplosionResistance(),
