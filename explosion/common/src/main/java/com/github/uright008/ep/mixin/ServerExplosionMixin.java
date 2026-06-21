@@ -387,17 +387,8 @@ public abstract class ServerExplosionMixin {
                 }
 
                 if (entities.isEmpty()) return true;
-                final int batchSize = 8;
-                final List<List<Entity>> entityBatches = new ArrayList<>((entities.size() + batchSize - 1) / batchSize);
-                for (int i = 0; i < entities.size(); i += batchSize) {
-                    entityBatches.add(entities.subList(i, Math.min(i + batchSize, entities.size())));
-                }
-                results = ParallelWorker.map(ParallelThreadPool.getPool("Explosion"),
-                        entityBatches, batch -> {
-                            List<ExplosionHelper.EntityDamageResult> r = new ArrayList<>(batch.size());
-                            for (Entity e : batch) r.add(computeEntityDamage(e, dr));
-                            return r;
-                        }, 5).stream().flatMap(List::stream).toList();
+                results = ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
+                        entities, entity -> computeEntityDamage(entity, dr), 8, 5);
             } else {
                 AABB bb = new AABB(x0, y0, z0, x1, y1, z1);
                 final List<Entity> allEntities = this.level.getEntities(this.source, bb);
@@ -410,17 +401,8 @@ public abstract class ServerExplosionMixin {
                     entities.add(e);
                 }
                 if (entities.isEmpty()) return true;
-                final int batchSize = 8;
-                final List<List<Entity>> entityBatches = new ArrayList<>((entities.size() + batchSize - 1) / batchSize);
-                for (int i = 0; i < entities.size(); i += batchSize) {
-                    entityBatches.add(entities.subList(i, Math.min(i + batchSize, entities.size())));
-                }
-                results = ParallelWorker.map(ParallelThreadPool.getPool("Explosion"),
-                        entityBatches, batch -> {
-                            List<ExplosionHelper.EntityDamageResult> r = new ArrayList<>(batch.size());
-                            for (Entity e : batch) r.add(computeEntityDamage(e, dr));
-                            return r;
-                        }, 5).stream().flatMap(List::stream).toList();
+                results = ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
+                        entities, entity -> computeEntityDamage(entity, dr), 8, 5);
             }
         } catch (RuntimeException e) {
             LOGGER.error("Explosion entity workers failed; falling back to vanilla", e);
@@ -480,17 +462,8 @@ public abstract class ServerExplosionMixin {
 
         if (filtered.isEmpty()) return List.of();
 
-        final int batchSize = 8;
-        final List<List<Entity>> entityBatches = new ArrayList<>((filtered.size() + batchSize - 1) / batchSize);
-        for (int i = 0; i < filtered.size(); i += batchSize) {
-            entityBatches.add(filtered.subList(i, Math.min(i + batchSize, filtered.size())));
-        }
-        return ParallelWorker.map(ParallelThreadPool.getPool("Explosion"),
-                entityBatches, batch -> {
-                    List<ExplosionHelper.EntityDamageResult> r = new ArrayList<>(batch.size());
-                    for (Entity e : batch) r.add(computeEntityDamage(e, doubleRadius));
-                    return r;
-                }, 5).stream().flatMap(List::stream).toList();
+        return ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
+                filtered, entity -> computeEntityDamage(entity, doubleRadius), 8, 5);
     }
 
     @Unique

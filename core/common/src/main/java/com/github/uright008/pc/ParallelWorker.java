@@ -188,6 +188,78 @@ public final class ParallelWorker {
         return Arrays.asList(results);
     }
 
+    /**
+     * Like {@link #map} but groups items into batches. Each batch is dispatched
+     * as a single work item, reducing fork/join overhead for fine-grained tasks.
+     *
+     * @param <T>            input type
+     * @param <R>            result type
+     * @return flattened list of results in original order
+     */
+    public static <T, R> List<R> mapBatched(
+            ExecutorService executor, List<T> items,
+            Function<T, R> mapper, int batchSize, int timeoutSeconds) {
+
+        int n = items.size();
+        if (n == 0) return List.of();
+        if (batchSize < 1) batchSize = 1;
+
+        int batches = (n + batchSize - 1) / batchSize;
+        if (batches == 1) {
+            List<R> results = new ArrayList<>(n);
+            SafeLevelAccess.runSafe(() -> {
+                for (T item : items) results.add(mapper.apply(item));
+            });
+            SafeOps.drainWrites();
+            return results;
+        }
+
+        int workers = Math.min(computeWorkers(batches), batches);
+        R[] results = (R[]) new Object[n];
+        AtomicReference<Throwable> firstError = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(workers);
+
+        int[] batchRange = new int[batches + 1];
+        for (int b = 0; b <= batches; b++) {
+            batchRange[b] = Math.min(b * batchSize, n);
+        }
+
+        int perWorker = batches / workers;
+        int extra = batches % workers;
+        int offset = 0;
+        for (int w = 0; w < workers; w++) {
+            final int start = offset;
+            final int end = offset + perWorker + (w < extra ? 1 : 0);
+            offset = end;
+            if (start >= end) {
+                latch.countDown();
+                continue;
+            }
+            executor.execute(() -> {
+                SafeLevelAccess.runSafe(() -> {
+                    try {
+                        for (int b = start; b < end; b++) {
+                            int from = batchRange[b];
+                            int to = batchRange[b + 1];
+                            for (int i = from; i < to; i++) {
+                                results[i] = mapper.apply(items.get(i));
+                            }
+                        }
+                    } catch (Throwable t) {
+                        firstError.compareAndSet(null, t);
+                        LOG.error("Batched worker [{},{}) failed", start, end, t);
+                    }
+                });
+                latch.countDown();
+            });
+        }
+
+        awaitLatch(latch, timeoutSeconds);
+        throwOnError(firstError.get());
+        SafeOps.drainWrites();
+        return Arrays.asList(results);
+    }
+
     static int computeWorkers(int itemCount) {
         int cpuCores = Runtime.getRuntime().availableProcessors();
         return Math.min(cpuCores, Math.max(2, itemCount / 16));
