@@ -326,6 +326,32 @@ public final class ParallelWorker {
         return Math.min(cpuCores, Math.max(2, itemCount / 16));
     }
 
+    public static int autoBatchSize(int itemCount) {
+        int workers = computeWorkers(itemCount);
+        return Math.max(1, (itemCount + workers - 1) / workers);
+    }
+
+    public static final class Batch<T, R> {
+        private final ExecutorService pool;
+        private final List<T> items = new ArrayList<>();
+
+        public Batch(ExecutorService pool) { this.pool = pool; }
+
+        public void add(T item) { items.add(item); }
+
+        public List<R> flush(Function<T, R> mapper, int timeoutSec) {
+            List<T> snapshot = new ArrayList<>(items);
+            items.clear();
+            return ParallelWorker.mapBatched(pool, snapshot, mapper, autoBatchSize(snapshot.size()), timeoutSec);
+        }
+
+        public void flushVoid(Consumer<T> action, int timeoutSec) {
+            List<T> snapshot = new ArrayList<>(items);
+            items.clear();
+            ParallelWorker.forEachBatched(pool, snapshot, action, autoBatchSize(snapshot.size()), timeoutSec);
+        }
+    }
+
     private static void throwOnError(Throwable err) {
         if (err != null) {
             if (err instanceof RuntimeException re) throw re;

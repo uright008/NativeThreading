@@ -50,9 +50,9 @@ public final class DiodeTickBatcher {
             return;
         }
 
-        ParallelWorker.forEachBatched(ParallelThreadPool.getPool("Redstone"), ticks, t -> {
-            tickSingle(level, t.pos, t.state);
-        }, 16, 5);
+        ParallelWorker.Batch<DiodeTick, Void> batch = new ParallelWorker.Batch<>(ParallelThreadPool.getPool("Redstone"));
+        for (DiodeTick t : ticks) batch.add(t);
+        batch.flushVoid(t -> tickSingle(level, t.pos, t.state), 5);
     }
 
     private static void tickSingle(ServerLevel level, BlockPos pos, BlockState state) {

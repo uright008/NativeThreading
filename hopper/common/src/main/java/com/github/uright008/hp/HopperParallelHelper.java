@@ -73,9 +73,9 @@ public final class HopperParallelHelper {
         Map<BlockPos, List<ItemEntitySnapshot>> itemSnapshots =
                 EntitySnapshotHelper.collectHopperItemEntities(level, positions);
 
-        List<PlanResult> results = ParallelWorker.mapBatched(
-                ParallelThreadPool.getPool("Hopper"), hoppers,
-                hopper -> {
+        ParallelWorker.Batch<HopperBlockEntity, PlanResult> batch = new ParallelWorker.Batch<>(ParallelThreadPool.getPool("Hopper"));
+        for (HopperBlockEntity hopper : hoppers) batch.add(hopper);
+        List<PlanResult> results = batch.flush(hopper -> {
                     try {
                         return computePlan(level, hopper, itemSnapshots);
                     } catch (Throwable t) {
@@ -83,7 +83,7 @@ public final class HopperParallelHelper {
                         return new PlanResult(null, hopper.getBlockPos(),
                                 ((HopperBlockEntityAccessor) hopper).getCooldownTime());
                     }
-                }, 64, 30);
+                }, 30);
 
         executePlans(level, results);
     }

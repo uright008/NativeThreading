@@ -387,8 +387,9 @@ public abstract class ServerExplosionMixin {
                 }
 
                 if (entities.isEmpty()) return true;
-                results = ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
-                        entities, entity -> computeEntityDamage(entity, dr), 8, 5);
+                ParallelWorker.Batch<Entity, ExplosionHelper.EntityDamageResult> entityBatch = new ParallelWorker.Batch<>(ParallelThreadPool.getPool("Explosion"));
+                for (Entity entity : entities) entityBatch.add(entity);
+                results = entityBatch.flush(entity -> computeEntityDamage(entity, dr), 5);
             } else {
                 AABB bb = new AABB(x0, y0, z0, x1, y1, z1);
                 final List<Entity> allEntities = this.level.getEntities(this.source, bb);
@@ -401,8 +402,9 @@ public abstract class ServerExplosionMixin {
                     entities.add(e);
                 }
                 if (entities.isEmpty()) return true;
-                results = ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
-                        entities, entity -> computeEntityDamage(entity, dr), 8, 5);
+                ParallelWorker.Batch<Entity, ExplosionHelper.EntityDamageResult> entityBatch2 = new ParallelWorker.Batch<>(ParallelThreadPool.getPool("Explosion"));
+                for (Entity entity : entities) entityBatch2.add(entity);
+                results = entityBatch2.flush(entity -> computeEntityDamage(entity, dr), 5);
             }
         } catch (RuntimeException e) {
             LOGGER.error("Explosion entity workers failed; falling back to vanilla", e);
@@ -462,8 +464,9 @@ public abstract class ServerExplosionMixin {
 
         if (filtered.isEmpty()) return List.of();
 
-        return ParallelWorker.mapBatched(ParallelThreadPool.getPool("Explosion"),
-                filtered, entity -> computeEntityDamage(entity, doubleRadius), 8, 5);
+        ParallelWorker.Batch<Entity, ExplosionHelper.EntityDamageResult> entityBatch3 = new ParallelWorker.Batch<>(ParallelThreadPool.getPool("Explosion"));
+        for (Entity entity : filtered) entityBatch3.add(entity);
+        return entityBatch3.flush(entity -> computeEntityDamage(entity, doubleRadius), 5);
     }
 
     @Unique
