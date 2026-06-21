@@ -19,27 +19,26 @@ import java.util.function.Supplier;
  */
 public final class SafeLevelAccess {
 
-    private static final ThreadLocal<Integer> safeZoneDepth = new ThreadLocal<>();
+    private static final ThreadLocal<int[]> safeZoneDepth =
+            ThreadLocal.withInitial(() -> new int[1]);
 
     private SafeLevelAccess() {}
 
     public static void enterSafeZone() {
-        Integer depth = safeZoneDepth.get();
-        safeZoneDepth.set(depth == null ? 1 : depth + 1);
+        int[] depth = safeZoneDepth.get();
+        depth[0]++;
     }
 
     public static void leaveSafeZone() {
-        Integer depth = safeZoneDepth.get();
-        if (depth == null || depth <= 1) {
+        int[] depth = safeZoneDepth.get();
+        if (--depth[0] <= 0) {
             safeZoneDepth.remove();
-            return;
         }
-        safeZoneDepth.set(depth - 1);
     }
 
     public static boolean isInSafeZone() {
-        Integer depth = safeZoneDepth.get();
-        return depth != null && depth > 0;
+        int[] depth = safeZoneDepth.get();
+        return depth[0] > 0;
     }
 
     public static void runSafe(Runnable action) {
