@@ -1,0 +1,43 @@
+# Contributing to NativeThreading
+
+## Commit Convention
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+<type>(<scope>): <description>
+
+perf(core): add Batch<T,R> API with auto-batching
+perf(explosion): use flat BlockState[] in traceRay
+fix(redstone): wireThreshold config override
+chore(build): update Gradle
+```
+
+**Scopes:** `core`, `explosion`, `hopper`, `redstone`, `entity`, `vectorial`, `build`, `docs`
+
+## Code Style
+
+- Java 25, 4-space indentation.
+- **No dependency on NotEnoughPalette** — modules must build standalone.
+- Prefer `Batch<T,R>` (add + flush) over raw `ParallelWorker.map` — it auto-batches and eliminates fork/join overhead.
+- Keep mixin injection points minimal; avoid `@Overwrite`.
+
+## Module Guidelines
+
+- New parallelization → new subproject with `build.included.gradle.kts`.
+- Register mixins in a module-level `*.mixins.json`.
+- Register fabric entrypoint in `fabric/src/main/resources/fabric.mod.json` under `"provides"`.
+
+## Testing
+
+Benchmark via spark profiler:
+
+```bash
+cd ~/fabric-server && python quick-test.py --combo native --duration 60
+```
+
+Results in `~/fabric-server/bench-results/`.
+
+## License
+
+By contributing you agree your code is licensed under MIT.
