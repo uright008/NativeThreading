@@ -73,7 +73,7 @@ public final class HopperParallelHelper {
         Map<BlockPos, List<ItemEntitySnapshot>> itemSnapshots =
                 EntitySnapshotHelper.collectHopperItemEntities(level, positions);
 
-        List<PlanResult> results = ParallelWorker.map(
+        List<PlanResult> results = ParallelWorker.mapBatched(
                 ParallelThreadPool.getPool("Hopper"), hoppers,
                 hopper -> {
                     try {
@@ -83,7 +83,7 @@ public final class HopperParallelHelper {
                         return new PlanResult(null, hopper.getBlockPos(),
                                 ((HopperBlockEntityAccessor) hopper).getCooldownTime());
                     }
-                }, 30);
+                }, 64, 30);
 
         executePlans(level, results);
     }
